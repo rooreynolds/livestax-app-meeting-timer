@@ -1,0 +1,115 @@
+
+<head>
+   <script src="//assets.livestax.com/livestax-0.2.0.min.js"></script>
+   <link href="//assets.livestax.com/theme-0.0.1.css" rel="stylesheet" type="text/css" media="all">
+   <script src="http://code.jquery.com/jquery-2.1.1.min.js"></script>
+   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+</head>
+
+<body>
+
+	<ul class="nav nav-tabs">
+	  <li class="active"><a href="#timer" data-toggle="tab">Timer</a></li>
+	  <li><a href="#settings" data-toggle="tab">Participants</a></li> <!-- TODO: use dialog rather than tab? -->
+	</ul>
+
+	<div id="myTabContent" class="tab-content">
+	  <div class="tab-pane fade active in" id="timer">
+	    <a id="clearButton" class="btn btn-warning-inverse">Clear</a>
+	    <a id="startStopButton" class="btn btn-primary-inverse">Start</a>
+	    <h1 style="font-size: 250%; color:gray;" id="bigclock">00:00:00</h1>
+	  </div>
+	  <div class="tab-pane fade" id="settings">
+	    <form class="form-horizontal">
+	      <fieldset>
+	        <div class="form-group">
+	          <label for="inputParticipants" class="col-lg-2 control-label">Number of participants</label>
+	          <div id="participantsGroup" class="col-lg-10">
+	            <input type="text" class="form-control" id="inputParticipants" value="">
+	          </div>
+	        </div>
+	        <div id="status"></div>
+	      </fieldset>
+	    </form>
+	  </div>
+	</div>
+
+  <script type="text/javascript">
+    var participants = 1;
+    var cost = 100;
+    var running = false;
+    var startedTime;
+    var timerID;
+
+    function updateTimer() {
+      var date = new Date(null);
+      var now = $.now();
+      date.setSeconds((now - startedTime) / 1000); 
+      var smalltime = date.toISOString().substr(11, 8);
+      date.setSeconds((now - startedTime) / 1000 * participants); 
+      var bigtime = date.toISOString().substr(11, 8);
+      $("#bigclock").html(bigtime);
+      Livestax.title(getParticpantLabel(participants) + " x " + smalltime);
+    }
+
+    function startTimer() { // to be called when you want to stop the timer
+      if (! running) {
+        startedTime = $.now();
+        $("#bigclock").css("color", "black");
+      }
+      running = true;
+      timerID = setInterval(updateTimer, 1000);
+    }
+
+    function abortTimer() { // to be called when you want to stop the timer
+      running = false;
+      clearInterval(timerID);
+      $("#bigclock").css("color", "gray");
+      Livestax.title("");
+    }
+
+    function getParticpantLabel(participants) {
+      return participants + (participants == 1 ? " participant" : " participants");
+    }
+
+    function updateParticipants(newValue) {
+      if ($.isNumeric(newValue)) {
+        participants = newValue;
+        $("#participantsGroup").removeClass("has-error");
+        $("#participantsHelp").remove();
+      } else {
+        $("#participantsGroup").addClass("has-error");
+        if ($("#participantsHelp").length == 0) { 
+          $("#participantsGroup").append($("<span>", {id: "participantsHelp", class: "help-block", text: "Must be a number"}));
+        }
+        participants = 0;
+      }
+      Livestax.title(getParticpantLabel(participants));
+    }
+
+    $("#inputParticipants").on('input', function() {
+      updateParticipants($(this).val());
+    });
+
+    $("#clearButton").click(function() {
+      $("#bigclock").html("00:00:00");
+      $("#bigclock").css("color", "gray");
+      abortTimer();
+      $("#startStopButton").text("Start");
+    });
+
+    $("#startStopButton").click(function() {
+      if (running) {
+        //stop
+        $("#startStopButton").text("Start");
+        abortTimer();
+      } else {
+        //start
+        $("#bigclock").html("00:00:00");
+        $("#startStopButton").text("Stop");
+        startTimer();
+      }
+    });
+  </script>
+
+</body>
